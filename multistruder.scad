@@ -40,6 +40,23 @@ manifold_angle = 11;
 input_count = 4;
 input_len = 14;
 
+//mounting dimensions
+hole_dist = 50;
+base_thick=10;
+base_w = 20;
+base_l = 60;
+
+//hotend dimensions – standard groovemount (http://reprap.org/wiki/Groove_Mount)
+hotend_d = 16.2;
+hotend_above_mount = 4.8; //thickness of the part of the hotend that sticks above the mounting plate
+hotend_groove_d = 12;
+hotend_groove_thick = 4.75;
+hotend_tol = 0.1;
+
+//fan dimensions, assumes centrifugal blower fan
+fan = true; //whether or not to include a fan mount
+fan_thick = 15; //thickness of fan
+fan_bolt_size = 3; //metric screw size of fan mount holes
 
 testing=false; //if true, the mount part is left off
 
@@ -139,20 +156,6 @@ if(testing==true) {
 }
 
 module mount(groovemount=true) {
-	//mounting dimensions
-	hole_dist = 50;
-	base_thick=10;
-	base_w = 20;
-	base_l = 60;
-
-	//hotend dimensions – standard groovemount (http://reprap.org/wiki/Groove_Mount)
-	hotend_d = 16.2;
-	hotend_above_mount = 4.8; //thickness of the part of the hotend that sticks above the mounting plate
-	hotend_groove_d = 12;
-	hotend_groove_thick = 4.75;
-
-	hotend_tol = 0.1;
-	
 	difference() {
 		//base rectangle
 		cube([base_w, base_l, base_thick]);
@@ -181,8 +184,61 @@ module mount(groovemount=true) {
 			cylinder(d = tube_od + tube_tol*2, h = base_thick + 0.02, $fn=20);
 		}
 	}
-
+	
+	//the stuff that's being mounted
 	translate([base_w / 2, base_l / 2, base_thick]) {
 		children();
+	}
+
+	//if using groovemount, add the fan/hotend bracket
+	if(groovemount) translate([base_w * 2, 0, 0]) {
+		fan_mount();
+	}
+}
+
+//generates a fan and hotend bracket
+// fan_dist refers to the horizontal distance between the center of the hotend and the inside edge of the fan mount
+module fan_mount(fan_dist=35) {
+	//if base width is smaller than minimum fan mounting width, use a larger width
+	fan_base_w = max(base_w, fan_thick + 8);
+
+	difference() {
+		//base rectangle
+		cube([fan_base_w, fan_dist + (base_l/2), hotend_groove_thick - (hotend_tol*2)]);
+
+		//bolt holes
+		translate([fan_base_w / 2, base_l / 2, 0]) {
+			translate([0, -hole_dist / 2, 0]) {
+				boltHole(size = 4, length = base_thick);
+			}
+			translate([0, hole_dist / 2, 0]) {
+				boltHole(size = 4, length = base_thick);
+			}
+		}
+
+		//hotend slot
+		hull() {
+			translate([fan_base_w / 2, base_l / 2, -0.01]) {
+				cylinder(d = hotend_d + hotend_tol*2, h = hotend_above_mount + hotend_tol);
+			}
+			translate([0, base_l / 2, -0.01]) {
+				cylinder(d = hotend_d + hotend_tol*2, h = hotend_above_mount + hotend_tol);
+			}
+		}
+	}
+
+	//fan mount
+	translate([0, fan_dist + (base_l/2), 0]) {
+		fm_dim = COURSE_METRIC_BOLT_MAJOR_THREAD_DIAMETERS[fan_bolt_size] + 5; //width of the fan mounting bits
+
+		difference() {
+			cube([fan_base_w, fm_dim, fm_dim]);
+
+			//bolt hole for fan
+			translate([1, fm_dim / 2, fm_dim / 2]) rotate([0, 90, 0]) boltHole(size = fan_bolt_size, length = fan_base_w + 2, $fn=10);
+
+			//slot for fan
+			translate([(fan_base_w - fan_thick) / 2, 0, 0]) cube([fan_thick, fm_dim, fm_dim]);
+		}
 	}
 }
