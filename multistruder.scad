@@ -219,10 +219,10 @@ module fan_mount(fan_dist=35) {
 		//hotend slot
 		hull() {
 			translate([fan_base_w / 2, base_l / 2, -0.01]) {
-				cylinder(d = hotend_d + hotend_tol*2, h = hotend_above_mount + hotend_tol);
+				cylinder(d = hotend_groove_d + hotend_tol*2, h = hotend_above_mount + hotend_tol);
 			}
 			translate([0, base_l / 2, -0.01]) {
-				cylinder(d = hotend_d + hotend_tol*2, h = hotend_above_mount + hotend_tol);
+				cylinder(d = hotend_groove_d + hotend_tol*2, h = hotend_above_mount + hotend_tol);
 			}
 		}
 	}
